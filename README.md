@@ -19,7 +19,7 @@ To add kiwibot to your Discord server, simply follow these steps:
 
 ## Feedback and Support
 
-If you encounter any issues while using kiwibot or have suggestions for improvement, please feel free to reach out to our support team. You can join our official Discord server or contact us via email.
+If you encounter any issues while using kiwibot or have suggestions for improvement, please feel free to reach out to our support team. You can join our official Discord server.
 
 - Discord Server: [Join now](https://discord.gg/Y5qPDcSTXQ)
 
@@ -29,7 +29,7 @@ We appreciate your feedback and are dedicated to continuously improving kiwibot 
 
 If you're interested in contributing to kiwibot's development, please check out our GitHub repository. We welcome contributions in the form of bug reports, feature requests, and code submissions.
 
-- GitHub: [kiwibot Repository](https://github.com/kiwibot/kiwibot)
+- GitHub: [kiwibot repository](https://github.com/kiwibot/kiwibot)
 
 ## License
 
