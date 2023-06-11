@@ -1,35 +1,33 @@
 import discord, asyncio
 from discord.ext import commands
-from database import Database
+from database import SupabaseDatabase
 
 class Temporarychannel(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, database):
         self.bot = bot
-        self.database = Database()
+        self.database = database
         self.cooldowns = {} 
         self.voice_channels = {} 
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.database.connect()
         print("events.temporarychannel ready")
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        if after.channel is not None:
+        if after.channel:
             try:
-                channel_id = await self.database.get_temporarychannel(member.guild.id)
+                if member.id in self.voice_channels:
+                    old_channel = member.guild.get_channel(self.voice_channels[member.id])
 
-                if channel_id == after.channel.id:
-                   
-                    if member.id in self.voice_channels:
-                        old_channel = member.guild.get_channel(self.voice_channels[member.id])
+                    if old_channel:
+                        await asyncio.sleep(1)
+                        await member.move_to(old_channel)
+                        return
 
-                        if old_channel:
-                            await asyncio.sleep(1)
-                            await member.move_to(old_channel)
-                            return
+                channel_id = await self.database.get_temporary_channel_id(member.guild.id)
 
+                if channel_id and channel_id == after.channel.id:
                     now = asyncio.get_running_loop().time()
                     if member.id in self.cooldowns and now - self.cooldowns[member.id] < 30:
                         seconds_left = int(30 - (now - self.cooldowns[member.id]))
@@ -56,4 +54,6 @@ class Temporarychannel(commands.Cog):
                 print(f"error in temporarychannel: {e}")
         
 def setup(bot):
-    bot.add_cog(Temporarychannel(bot))
+    database = SupabaseDatabase()
+    bot.loop.create_task(database.connect())
+    bot.add_cog(Temporarychannel(bot, database))

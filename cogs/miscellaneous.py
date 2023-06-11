@@ -1,20 +1,47 @@
 import discord, asyncio
 from discord.ext import commands
 from discord import SlashCommandGroup, option
-from database import Database
+from database import SupabaseDatabase
 
-class TemporaryChannelCommands(commands.Cog):
-    def __init__(self, bot):
+class Miscellaneous(commands.Cog):
+    def __init__(self, bot, database):
         self.bot = bot
-        self.database = Database()
-
+        self.database = database
+        
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.database.connect()
-        print("cmds.temporarychannel ready")
+        print("cmds.miscellaneous")
 
+    ### SETUP COMMANDS
     setup = SlashCommandGroup("setup")
-    voice = SlashCommandGroup("voice")
+
+
+    #AUTOMATIC ROLE SETUP
+    @setup.command(name="automaticrole", description="Setup automatic role assignment upon joining for both human users and bots.")
+    @commands.cooldown(1, 10, commands.BucketType.guild)
+    @option(
+        "type",
+        choices=["Bots", "Humans"]
+    )
+    @commands.guild_only()
+
+    async def automaticrole(self, ctx, type : str, role : discord.Role):
+        embed = discord.Embed(title="Automatic Role Setup", color=discord.Color.blue())
+
+        try:
+            if type == "Bots":
+                await self.database.set_automatic_bot_role_id(ctx.guild.id, role.id)
+
+            if type == "Humans":
+                await self.database.set_automatic_human_role_id(ctx.guild.id, role.id)        
+
+            embed.description = f"The role for {type.lower()} has been successfully updated to: \n{role.name}"
+            await ctx.respond(embed=embed, ephemeral=True)
+
+        except:
+            embed.color=discord.Color.red()
+            embed.description = "There was an error trying to execute this command. Please try again later."
+            await ctx.respond(embed=embed, ephemeral=True)
 
     #TEMPORARY CHANNEL SETUP
     @setup.command(name="temporarychannel", description="Setup a 'Join To Create' channel for temporary voice channels!")
@@ -23,19 +50,15 @@ class TemporaryChannelCommands(commands.Cog):
 
     async def temporarychannel(self, ctx):
         embed = discord.Embed(title="Temporary Channel Setup", color=discord.Color.blue())
-
-        if not self.database.conn:
-            embed.color=discord.Color.red()
-            embed.description = "Apologies, we're currently experiencing an issue connecting to the database. Please try again later."
-            await ctx.respond(embed=embed, ephemeral=True)
-            return
+        temporarychannelevent = self.bot.get_cog("Temporarychannel")
 
         try: 
-            category = await ctx.guild.create_category(name="VOICE")
+            category = await ctx.guild.create_category(name="🔊VOICE")
             await asyncio.sleep(1)
             channel = await ctx.guild.create_voice_channel(name="[🎤] Join To Create", category=category)
 
-            await self.database.set_temporarychannel(ctx.guild.id, channel.id)
+            await self.database.set_temporary_channel_id(ctx.guild.id, channel.id)
+            temporarychannelevent.temporary_channel_cache[ctx.guild.id] = channel.id
 
             embed.description = "The setup has been completed successfully! 🎉"
             await ctx.respond(embed=embed, ephemeral=True)
@@ -44,7 +67,11 @@ class TemporaryChannelCommands(commands.Cog):
             embed.color=discord.Color.red()
             embed.description = "There was an error trying to execute this command. Please try again later."
             await ctx.respond(embed=embed, ephemeral=True)
-            
+
+
+    ### VOICE COMMANDS
+    voice = SlashCommandGroup("voice")
+
     #VOICE BITRATE
     @voice.command(name="bitrate", description="Modify the bitrate of the channel.")
     @commands.cooldown(1, 5, commands.BucketType.guild)
@@ -386,4 +413,6 @@ class TemporaryChannelCommands(commands.Cog):
         await ctx.respond(embed=embed, ephemeral=True)
 
 def setup(bot):
-    bot.add_cog(TemporaryChannelCommands(bot))
+    database = SupabaseDatabase()
+    bot.loop.create_task(database.connect())
+    bot.add_cog(Miscellaneous(bot, database))
