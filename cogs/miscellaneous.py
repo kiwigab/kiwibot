@@ -1,7 +1,9 @@
-import discord, asyncio
+import discord, asyncio, os, requests, json
 from discord.ext import commands
 from discord import SlashCommandGroup, option
 from database import SupabaseDatabase
+from easy_pil import Editor, Canvas, Font
+from io import BytesIO
 
 class Miscellaneous(commands.Cog):
     def __init__(self, bot, database):
@@ -15,6 +17,44 @@ class Miscellaneous(commands.Cog):
     ### SETUP COMMANDS
     setup = SlashCommandGroup("setup")
 
+    #AUTOMATIC ROLE SETUP
+    @setup.command(name="messages", description="Set up welcome and goodbye messages when a user joins or leaves a server.")
+    @commands.cooldown(1, 10, commands.BucketType.guild)
+    @option("type", choices=["Welcome", "Goodbye"])
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+
+    async def messages(self, ctx, type : str, channel : discord.TextChannel, text : str, welcome_card : bool = False):
+        embed = discord.Embed(title="Message", color=discord.Color.blue())
+        
+        if type == "Welcome":
+            welcome = {
+                "message" : text,
+                "channel_id" : channel.id,
+                "welcome_card" : welcome_card
+            }
+
+            await self.database.set_welcome(ctx.guild.id, welcome)
+
+            embed.title = "Welcome Message"
+            embed.add_field(name="Message", value=text, inline=False)
+            embed.add_field(name="Channel", value=f"`{channel.name}`", inline=False)
+            embed.add_field(name="Card", value=f"`{welcome_card}`", inline=False)
+
+        if type == "Goodbye":
+            goodbye = {
+                "message" : text,
+                "channel_id" : channel.id,
+            }
+
+            await self.database.set_goodbye(ctx.guild.id, goodbye)
+
+            embed.title = "Goodbye Message"
+            embed.add_field(name="Message", value=text, inline=False)
+            embed.add_field(name="Channel", value=f"`{channel.name}`", inline=False)
+
+
+        await ctx.respond(embed=embed, ephemeral=True)
 
     #AUTOMATIC ROLE SETUP
     @setup.command(name="automaticrole", description="Setup automatic role assignment upon joining for both human users and bots.")
@@ -23,6 +63,7 @@ class Miscellaneous(commands.Cog):
         "type",
         choices=["Bots", "Humans"]
     )
+    @commands.has_permissions(administrator=True)
     @commands.guild_only()
 
     async def automaticrole(self, ctx, type : str, role : discord.Role):
@@ -46,6 +87,7 @@ class Miscellaneous(commands.Cog):
     #TEMPORARY CHANNEL SETUP
     @setup.command(name="temporarychannel", description="Setup a 'Join To Create' channel for temporary voice channels!")
     @commands.cooldown(1, 10, commands.BucketType.guild)
+    @commands.has_permissions(administrator=True)
     @commands.guild_only()
 
     async def temporarychannel(self, ctx):
