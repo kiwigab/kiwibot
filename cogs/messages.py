@@ -4,7 +4,7 @@ from database import SupabaseDatabase
 from easy_pil import Editor, Canvas, Font
 from io import BytesIO
 
-class Mssages(commands.Cog):
+class Messages(commands.Cog):
     def __init__(self, bot, database):
         self.bot = bot
         self.database = database
@@ -86,4 +86,4 @@ class Mssages(commands.Cog):
 def setup(bot):
     database = SupabaseDatabase()
     bot.loop.create_task(database.connect())
-    bot.add_cog(Mssages(bot, database))
+    bot.add_cog(Messages(bot, database))
