@@ -24,6 +24,10 @@ class Automaticrole(commands.Cog):
         if bot_role_id and member.bot:
             role = member.guild.get_role(bot_role_id)
             await member.add_roles(role)
+
+    @commands.Cog.listener()
+    async def on_disconnect(self):
+        await self.database.disconnect()
         
 def setup(bot):
     database = SupabaseDatabase()

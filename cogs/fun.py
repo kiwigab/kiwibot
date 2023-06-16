@@ -1,8 +1,7 @@
-import discord, asyncio, json, requests, os
+import discord, asyncio, random, requests
+from discord import option
 from discord.ext import commands
-from database import SupabaseDatabase
-from easy_pil import Editor, Canvas, Font
-from io import BytesIO
+from langdetect import detect
 
 class Fun(commands.Cog):
     def __init__(self, bot):
@@ -12,6 +11,72 @@ class Fun(commands.Cog):
     async def on_ready(self):
         print("cmds.fun ready")
 
+    @commands.slash_command(name="8ball", description="Ask the magic 8-ball a question!")
+    async def eight_ball(self, ctx, question):
+        responses = {
+            "ro": [
+                "Da, cu siguranță! ✅",
+                "Probabil că da. ✅",
+                "Nu pot să-ți răspund acum. 🤔",
+                "Mai bine nu-ți spun acum. 🤐",
+                "Nu părea probabil. ❌",
+                "Absolut deloc! ❌"
+            ],
+            "en": [
+                "Yes, definitely! ✅",
+                "Most likely. ✅",
+                "I can't answer that right now. 🤔",
+                "Better not tell you now. 🤐",
+                "Doesn't seem likely. ❌",
+                "Absolutely not! ❌"
+            ],
+            "fr": [
+                "Oui, certainement ! ✅",
+                "Très probablement. ✅",
+                "Je ne peux pas répondre pour le moment. 🤔",
+                "Mieux vaut ne pas te le dire maintenant. 🤐",
+                "Ça ne semble pas probable. ❌",
+                "Absolument pas ! ❌"
+            ],
+            "bg": [
+                "Да, определено! ✅",
+                "Много вероятно. ✅",
+                "не мога да отговоря на това в момента 🤔",
+                "По-добре не ти казвам сега. 🤐",
+                "Не изглежда вероятно. ❌",
+                "Абсолютно не! ❌"
+            ],
+            "es": [
+                "Sí, ¡definitivamente! ✅",
+                "Es muy probable. ✅",
+                "No puedo responder eso ahora mismo. 🤔",
+                "Mejor no te lo digo ahora. 🤐",
+                "No parece probable. ❌",
+                "¡Absolutamente no! ❌"
+            ]
+        }
+
+        language = detect(question)
+
+        if language in responses:
+            response = random.choice(responses[language])
+        else:
+            response = random.choice(responses["en"])
+
+        embed = discord.Embed(title="Magic 8-Ball", color=discord.Color.blue())
+        embed.add_field(name="Question", value=question, inline=False)
+        embed.add_field(name="Response", value=response, inline=False)
+        embed.set_footer(text="Ask the magic 8-ball anything!")
+
+        await ctx.respond(embed=embed)
+
+    #RANDOMFACT
+    @commands.slash_command(name="randomfact", description="Get a random fact!")
+    async def randomfact(self, ctx):
+        response = requests.get("https://useless-facts.sameerkumar.website/api")
+        fact = response.json()
+        embed = discord.Embed(title="Random Fact", description=fact["data"], color=discord.Color.blue())
+        await ctx.send(embed=embed)
 
     #COINFLIP
     @commands.slash_command(name="coinflip", description="Heads or tails? Flip that coin!")

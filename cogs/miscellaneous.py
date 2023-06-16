@@ -1,4 +1,4 @@
-import discord, asyncio, os, requests, humanfriendly
+import discord, asyncio, requests, humanfriendly, datetime
 from discord.ext import commands
 from discord import SlashCommandGroup, option
 from database import SupabaseDatabase
@@ -14,129 +14,102 @@ class Miscellaneous(commands.Cog):
     async def on_ready(self):
         print("cmds.miscellaneous")
 
-    #reminder
-    @commands.slash_command(name="reminder", description="Set a reminder for a specific date and time.")
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @option("time", description="MONTH/DAY/YEAR HOUR:MINUTE PERIOD", required=True)
-    async def reminder(self, ctx, time, message : str):
-        remind_time = datetime.datetime.strptime(time, '%m/%d/%Y %I:%M %p')
-        delta = int((remind_time - datetime.datetime.now()).total_seconds())
-
-        embed = discord.Embed(title="Reminder", description=f"A reminder has been set for {remind_time.strftime('%b %d, %Y at %I:%M %p')}.", color=discord.Color.blue())
-        embed.add_field(name="Message", value=message, inline=False)
-        embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar.url)
-        embed.set_footer(text="This is a reminder.")
-        
-        await ctx.respond(embed=embed, ephemeral=True)
-
-        await asyncio.sleep(delta)
-
-        embed = discord.Embed(title="Reminder", description=f"{message}", color=discord.Color.blue())
-        embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar.url)
-        embed.set_footer(text="This was a reminder.")
-        await ctx.author.send(embed=embed, ephemeral=True)
-
     #guild
-    @commands.slash_command(name="guild", description="This command displays information about the current guild.")
+    @commands.slash_command(name="guild", description="Display information about the current guild.")
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def guild(self, ctx):
-
-        embed = discord.Embed(color=discord.Color.blue(), description=" ")
+        embed = discord.Embed(color=discord.Color.blue())
         guild = ctx.author.guild
 
         try:
-            embed.title = "Information"
+            embed.title = f"Guild Information"
 
-            embed.add_field(name="🏰Guild Name", value=f"```{guild.name}```", inline=True)
-            embed.add_field(name="👑Guild Owner", value=f"```@{guild.owner.name}```", inline=True)
-            embed.add_field(name="🆔Guild ID", value=f"```{guild.id}```", inline=True)
+            embed.add_field(name="🏰 Guild Name", value=f"```{guild.name}```", inline=True)
+            embed.add_field(name="👑 Guild Owner", value=f"```@{guild.owner.name}```", inline=True)
+            embed.add_field(name="🆔 Guild ID", value=f"```{guild.id}```", inline=True)
 
-            bots = 0
-            for member in guild.members:
-                if member.bot:
-                    bots += 1
+            bots = sum(member.bot for member in guild.members)
+            embed.add_field(name="👥 Members", value=f"```Total Members: {guild.member_count} | Humans: {guild.member_count - bots} | Bots: {bots}```", inline=False)
+            embed.add_field(name="📺 Channels", value=f"```Text: {len(guild.text_channels)} | Voice: {len(guild.voice_channels)} | Stage: {len(guild.stage_channels)} | Forum: {len(guild.forum_channels)} | Categories: {len(guild.categories)}```", inline=False)
+            embed.add_field(name="🐸 Emojis & Stickers", value=f"```Emojis: {len(guild.emojis)} | Stickers: {len(guild.stickers)}```", inline=False)
 
-            embed.add_field(name="👥Members", value=f"```Total Members: {guild.member_count} | Members: {guild.member_count - bots} | Bots: {bots}```", inline=False)
-            embed.add_field(name="📺Channels", value=f"```Text: {len(guild.text_channels)} | Voice: {len(guild.voice_channels)} | Stage: {len(guild.stage_channels)} | Forum: {len(guild.forum_channels)}```", inline=False)
-            embed.add_field(name="🐸Emojis & Stickers", value=f"```Emojis: {len(guild.emojis)} | Stickers: {len(guild.stickers)}```", inline=False)
+            guild_roles = ", ".join(role.name for role in guild.roles if role.name != "@everyone")
+            embed.add_field(name="👮 Roles", value=f"```{guild_roles}```", inline=False)
 
-            guild_roles = ""
-            for role in guild.roles:
-                if role.name != "@everyone":
-                    guild_roles = guild_roles + f"{role.name}, "
-
-            embed.add_field(name="👮Roles", value=f"```{str(guild_roles[:-2])}```", inline=False)
-
-            formated_created_at = guild.created_at.strftime("%m/%d/%Y, %H:%M")
-            humanfriendly_created_at = humanfriendly.format_timespan(num_seconds=(datetime.datetime.now(datetime.timezone.utc) - guild.created_at), detailed=False, max_units=1)
-            embed.add_field(name="⏰Created the guild", value=f"```{formated_created_at} ({humanfriendly_created_at} ago)```", inline=False)
+            formatted_created_at = guild.created_at.strftime("%m/%d/%Y, %H:%M")
+            created_time = humanfriendly.format_timespan(datetime.datetime.now(datetime.timezone.utc) - guild.created_at, detailed=False, max_units=1)
+            embed.add_field(name="⏰ Created the Guild", value=f"```{formatted_created_at} ({created_time} ago)```", inline=False)
 
             await ctx.respond(embed=embed)
 
         except:
             embed.title = "Error"
-            embed.description = "There was an error trying to execute this command!"
-            await ctx.respond(embed=embed, delete_after=5)
-
-    #avatar
-    @commands.slash_command(name="avatar", description="Get your avatar or the avatar of a user from the guild")
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def avatar(self, ctx, member : discord.Member = None):
-
-        embed = discord.Embed(color=discord.Color.blue(), title="Avatar")
-        member = member or ctx.author
-        
-        try:
-            embed.title = f"{member.name}'s avatar"
-            embed.set_image(url=member.display_avatar.url)
-
-        except:
-            embed.title = "Error"
-            embed.description = "There was an error trying to execute this command!"
+            embed.description = "There was an error while trying to execute this command!"
             await ctx.respond(embed=embed, ephemeral=True)
 
-    #whois
-    @commands.slash_command(name="whois", description="Find information about you or a member from this guild.")
+    #avatar
+    @commands.slash_command(name="avatar", description="Get your avatar or the avatar of a user from the guild.")
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def whois(self, ctx, member : discord.Member = None):
-
-        embed = discord.Embed(color=discord.Color.blue(), description=" ")
+    async def avatar(self, ctx, member: discord.Member = None):
+        embed = discord.Embed(color=discord.Color.blue(), title="Avatar")
         member = member or ctx.author
-        
+
         try:
-            embed.title = "Information"
-            
-            embed.add_field(name="📋Username", value=f"```@{member.name}```", inline=True)
-            embed.add_field(name="🎭Nickname", value=f"```{member.display_name}```", inline=True)
-            embed.add_field(name="🆔User ID", value=f"```{member.id}```", inline=True)
-            embed.add_field(name="🤖Bot", value=f"```{str(member.bot)}```", inline=True)
-            
-            member_roles = ""
-            for role in member.roles:
-                if role.name != "@everyone":
-                    member_roles = member_roles + f"{role.name}, "
+            if member.display_avatar.is_animated():
+                embed.title = f"{member.name}'s Animated Avatar"
+                embed.description = f"Here is the animated avatar for {member.mention}:"
+            else:
+                embed.title = f"{member.name}'s Avatar"
+                embed.description = f"Here is the avatar for {member.mention}:"
 
-            embed.add_field(name="👮Roles", value=f"```{str(member_roles[:-2])}```", inline=False)
+            embed.set_image(url=member.display_avatar.url)
 
-            formated_joined_at = member.joined_at.strftime("%m/%d/%Y, %H:%M")
-            humanfriendly_joined_at = humanfriendly.format_timespan(num_seconds=(datetime.datetime.now(datetime.timezone.utc) - member.joined_at), detailed=False, max_units=1)
-            embed.add_field(name="🎉Joined on server", value=f"```{formated_joined_at} ({humanfriendly_joined_at} ago)```", inline=False)
-
-            formated_created_at = member.created_at.strftime("%m/%d/%Y, %H:%M")
-            humanfriendly_created_at = humanfriendly.format_timespan(num_seconds=(datetime.datetime.now(datetime.timezone.utc) - member.created_at), detailed=False, max_units=1)
-            embed.add_field(name="⏰Created the account", value=f"```{formated_created_at} ({humanfriendly_created_at} ago)```", inline=False)
+            await ctx.respond(embed=embed)
 
         except:
             embed.title = "Error"
-            embed.description = "There was an error trying to execute this command!"
-            await ctx.respond(embed=embed, delete_after=5)
+            embed.description = "There was an error while trying to execute this command!"
+            await ctx.respond(embed=embed, ephemeral=True)
+            return
 
-    #ping
-    @commands.slash_command(ping="ping", description="Latency of the bot.")
+
+    @commands.slash_command(name="whois", description="Find information about you or a member from this guild.")
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def ping(self, ctx):
-        embed = discord.Embed(title="🏓Pong", description=f"{round(self.bot.latency * 1000)}ms", color=discord.Color.blue())
-        await ctx.respond(embed=embed, ephemeral=True)
+    async def whois(self, ctx, member: discord.Member = None):
+
+        try:
+            embed = discord.Embed(color=discord.Color.blue(), title = "Member Information")
+
+            member = member or ctx.author
+
+            embed.add_field(name="👤 Username", value=f"```@{member.name}```", inline=True)
+            embed.add_field(name="👑 Nickname", value=f"```{member.display_name}```", inline=True)
+            embed.add_field(name="🔖 User ID", value=f"```{member.id}```", inline=True)
+            embed.add_field(name="🤖 Bot", value=f"```{str(member.bot)}```", inline=True)
+
+            member_roles = ", ".join(role.name for role in member.roles if role.name != "@everyone")
+            embed.add_field(name="👮 Roles", value=f"```{member_roles}```", inline=False)
+
+            joined_time = humanfriendly.format_timespan(datetime.datetime.now(datetime.timezone.utc) - member.joined_at)
+            embed.add_field(name="🎉 Joined on server", value=f"```{member.joined_at.strftime('%m/%d/%Y, %H:%M')} ({joined_time} ago)```", inline=False)
+
+            created_time = humanfriendly.format_timespan(datetime.datetime.now(datetime.timezone.utc) - member.created_at)
+            embed.add_field(name="⏰ Created the accouent", value=f"```{member.created_at.strftime('%m/%d/%Y, %H:%M')} ({created_time} ago)```", inline=False)
+
+            if member.activity:
+                embed.add_field(
+                    name="🎮 Activity",
+                    value=f"```{str(member.activity.type.name).title()} {member.activity.name}```",
+                    inline=False
+                )
+
+            embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+            await ctx.respond(embed=embed)
+
+        except:
+            embed = discord.Embed(color=discord.Color.blue(), title = "Error", description = "There was an error trying to execute this command!")
+            await ctx.respond(embed=embed, ephemeral=True)
 
     ### SETUP COMMANDS
     setup = SlashCommandGroup("setup")
@@ -578,6 +551,17 @@ class Miscellaneous(commands.Cog):
         embed.description = "Congratulations! You are now the owner of this temporary voice channel."
         await ctx.respond(embed=embed, ephemeral=True)
 
+    #PING
+    @commands.slash_command(ping="ping", description="Latency of the bot.")
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def ping(self, ctx):
+        embed = discord.Embed(title="🏓Pong", description=f"{round(self.bot.latency * 1000)}ms", color=discord.Color.blue())
+        await ctx.respond(embed=embed, ephemeral=True)
+
+    @commands.Cog.listener()
+    async def on_disconnect(self):
+        await self.database.disconnect()
+        
 def setup(bot):
     database = SupabaseDatabase()
     bot.loop.create_task(database.connect())

@@ -82,7 +82,11 @@ class Messages(commands.Cog):
                     goodbye_message = goodbye_message.replace("[guild.name]", member.guild.name)      
 
                 await channel.send(goodbye_message)
-
+                
+    @commands.Cog.listener()
+    async def on_disconnect(self):
+        await self.database.disconnect()
+        
 def setup(bot):
     database = SupabaseDatabase()
     bot.loop.create_task(database.connect())

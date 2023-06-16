@@ -24,6 +24,14 @@ class SupabaseDatabase:
     async def disconnect(self):
         await self.pool.close()
 
+
+    async def delete_guild_data(self, guild_id):
+        async with self.pool.acquire() as connection:
+            result = await connection.fetch(f"SELECT * FROM guilds WHERE guild_id={guild_id}")
+
+            if result:
+                await connection.execute(f"DELETE FROM guilds WHERE guild_id={guild_id}")
+
     #temporary_channel
     async def get_guild_data(self, guild_id):
         async with self.pool.acquire() as connection:
