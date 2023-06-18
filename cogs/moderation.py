@@ -2,11 +2,10 @@ import discord, humanfriendly
 from discord.ext import commands
 from discord.utils import find
 from discord import option, SlashCommandGroup
+from main import Bot
 
 class Moderation(commands.Cog):
-    role = SlashCommandGroup("role", "Commands related to roles")
-
-    def __init__(self, bot):
+    def __init__(self, bot : Bot):
         self.bot = bot
 
     @commands.Cog.listener()
@@ -14,6 +13,8 @@ class Moderation(commands.Cog):
         print("cmds.moderation")
 
     #MULTIPLE ROLE
+    role = SlashCommandGroup("role", "Commands related to roles")
+
     @role.command(name="multiple", description="Add or remove a role from multiple members.")
     @commands.cooldown(1, 5, commands.BucketType.user)
     @option("filter", choices=["All", "Members", "Bots"], default="All", description="Filter members by type.")
@@ -335,5 +336,5 @@ class Moderation(commands.Cog):
 
       await ctx.respond(embed=embed, ephemeral=True)
 
-def setup(bot):
+def setup(bot:Bot):
     bot.add_cog(Moderation(bot))

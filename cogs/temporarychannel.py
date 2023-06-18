@@ -1,11 +1,11 @@
 import discord, asyncio
 from discord.ext import commands
-from database import SupabaseDatabase
+from main import Bot
 
 class Temporarychannel(commands.Cog):
-    def __init__(self, bot, database):
+    def __init__(self, bot : Bot):
         self.bot = bot
-        self.database = database
+        self.database = bot.database
         self.cooldowns = {}
         self.voice_channels = {}
         self.guild_data_cache = {} 
@@ -67,11 +67,5 @@ class Temporarychannel(commands.Cog):
             except Exception as e:
                 print(f"error in temporarychannel: {e}")
 
-    @commands.Cog.listener()
-    async def on_disconnect(self):
-        await self.database.disconnect()
-        
-def setup(bot):
-    database = SupabaseDatabase()
-    bot.loop.create_task(database.connect())
-    bot.add_cog(Temporarychannel(bot, database))
+def setup(bot:Bot):
+    bot.add_cog(Temporarychannel(bot))

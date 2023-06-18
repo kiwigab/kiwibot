@@ -2,9 +2,10 @@ import discord, asyncio, random, requests
 from discord import option
 from discord.ext import commands
 from langdetect import detect
+from main import Bot
 
 class Fun(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot : Bot):
         self.bot = bot
 
     @commands.Cog.listener()
@@ -149,5 +150,5 @@ class Fun(commands.Cog):
         await ctx.respond(embed=embed)
 
 
-def setup(bot):
+def setup(bot:Bot):
     bot.add_cog(Fun(bot))

@@ -1,11 +1,11 @@
 import discord, asyncio
 from discord.ext import commands
-from database import SupabaseDatabase
+from main import Bot
 
 class Automaticrole(commands.Cog):
-    def __init__(self, bot, database):
+    def __init__(self, bot : Bot):
         self.bot = bot
-        self.database = database
+        self.database = bot.database
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -24,12 +24,6 @@ class Automaticrole(commands.Cog):
         if bot_role_id and member.bot:
             role = member.guild.get_role(bot_role_id)
             await member.add_roles(role)
-
-    @commands.Cog.listener()
-    async def on_disconnect(self):
-        await self.database.disconnect()
         
-def setup(bot):
-    database = SupabaseDatabase()
-    bot.loop.create_task(database.connect())
-    bot.add_cog(Automaticrole(bot, database))
+def setup(bot:Bot):
+    bot.add_cog(Automaticrole(bot))

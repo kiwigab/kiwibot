@@ -1,13 +1,13 @@
 import discord, asyncio, json, requests, os
 from discord.ext import commands
-from database import SupabaseDatabase
+from main import Bot
 from easy_pil import Editor, Canvas, Font
 from io import BytesIO
 
 class Messages(commands.Cog):
-    def __init__(self, bot, database):
+    def __init__(self, bot : Bot):
         self.bot = bot
-        self.database = database
+        self.database = bot.database
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -83,11 +83,5 @@ class Messages(commands.Cog):
 
                 await channel.send(goodbye_message)
                 
-    @commands.Cog.listener()
-    async def on_disconnect(self):
-        await self.database.disconnect()
-        
 def setup(bot):
-    database = SupabaseDatabase()
-    bot.loop.create_task(database.connect())
-    bot.add_cog(Messages(bot, database))
+    bot.add_cog(Messages(bot))

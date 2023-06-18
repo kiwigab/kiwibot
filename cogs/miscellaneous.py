@@ -1,14 +1,12 @@
 import discord, asyncio, requests, humanfriendly, datetime
 from discord.ext import commands
 from discord import SlashCommandGroup, option
-from database import SupabaseDatabase
-from easy_pil import Editor, Canvas, Font
-from io import BytesIO
+from main import Bot
 
 class Miscellaneous(commands.Cog):
-    def __init__(self, bot, database):
+    def __init__(self, bot : Bot):
         self.bot = bot
-        self.database = database
+        self.database = bot.database
         
     @commands.Cog.listener()
     async def on_ready(self):
@@ -558,11 +556,5 @@ class Miscellaneous(commands.Cog):
         embed = discord.Embed(title="🏓Pong", description=f"{round(self.bot.latency * 1000)}ms", color=discord.Color.blue())
         await ctx.respond(embed=embed, ephemeral=True)
 
-    @commands.Cog.listener()
-    async def on_disconnect(self):
-        await self.database.disconnect()
-        
-def setup(bot):
-    database = SupabaseDatabase()
-    bot.loop.create_task(database.connect())
-    bot.add_cog(Miscellaneous(bot, database))
+def setup(bot : Bot):
+    bot.add_cog(Miscellaneous(bot))
